@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 
+/*
+* https://github.com/glepretre/angular-seed
+* forked from
+* https://github.com/angular/angular-seed
+*/
+
 var util = require('util'),
     http = require('http'),
     fs = require('fs'),
@@ -12,8 +18,11 @@ function main(argv) {
   new HttpServer({
     'GET': createServlet(StaticServlet),
     'HEAD': createServlet(StaticServlet),
-    // Accept POST method
-    'POST': createServlet(StaticServlet)
+    //Added HTTP methods handlers
+    'POST': createServlet(StaticServlet),
+    'PUT': createServlet(StaticServlet),
+    'PATCH': createServlet(StaticServlet),
+    'DELETE': createServlet(StaticServlet)
   }).start(Number(argv[2]) || DEFAULT_PORT);
 }
 
@@ -84,7 +93,7 @@ StaticServlet.MimeMap = {
   'jpeg': 'image/jpeg',
   'gif': 'image/gif',
   'png': 'image/png',
-  'svg': 'image/svg+xml'
+  'svg': 'image/svg+xml'
 };
 
 StaticServlet.prototype.handleRequest = function(req, res) {
@@ -93,20 +102,70 @@ StaticServlet.prototype.handleRequest = function(req, res) {
     return String.fromCharCode(parseInt(hex, 16));
   });
   var parts = path.split('/');
-// catch the POST request  
-  if (req.method === 'POST') {
-    return self.sendJson_(req, res, path);
-  }
-  if (parts[parts.length-1].charAt(0) === '.')
+  var lastPart = parts[parts.length-1];
+
+  if (lastPart.charAt(0) === '.') {
     return self.sendForbidden_(req, res, path);
-  fs.stat(path, function(err, stat) {
-    if (err)
+  }
+  //Added a switch to redirect to appropriate handler
+  switch (req.method) {
+    case 'POST':
+      return self.handlePOST(req, res, path);
+    case 'PUT':
+      return self.handlePUT(req, res, path);
+    case 'PATCH':
+      return self.handlePATCH(req, res, path);
+    case 'DELETE':
+      return self.handleDELETE(req, res, path);
+    case 'GET'||'HEAD':
+      return self.handleGET(req, res, path);
+    default:
+      return self.sendError_(req, res, error);
+  }
+};
+
+StaticServlet.prototype.handlePOST = function(req, res, path) {
+  var self = this;
+  return self.sendJson_(req, res, path);
+};
+
+StaticServlet.prototype.handlePUT = function(req, res, path) {
+  var self = this;
+  // Implement your function in StaticServlet.prototype
+  // then redirect to it using
+  // return self.yourFunction_(req, res, path);
+  return self.sendError_(req, res, error);
+};
+
+StaticServlet.prototype.handlePATCH = function(req, res, path) {
+  var self = this;
+  // Implement your function in StaticServlet.prototype
+  // then redirect to it using
+  // return self.yourFunction_(req, res, path);
+  return self.sendError_(req, res, error);
+};
+
+StaticServlet.prototype.handleDELETE = function(req, res, path) {
+  var self = this;
+  // Implement your function in StaticServlet.prototype
+  // then redirect to it using
+  // return self.yourFunction_(req, res, path);
+  return self.sendError_(req, res, error);
+};
+
+StaticServlet.prototype.handleGET = function(req, res, path) {
+  var self = this;
+  fs.stat(path, function(error, stat) {
+    if (error) {
       return self.sendMissing_(req, res, path);
-    if (stat.isDirectory())
+    }
+    if (stat.isDirectory()){
       return self.sendDirectory_(req, res, path);
-    return self.sendFile_(req, res, path);
+    } else {
+      return self.sendFile_(req, res, path);
+    }
   });
-}
+};
 
 StaticServlet.prototype.sendError_ = function(req, res, error) {
   res.writeHead(500, {
@@ -197,8 +256,8 @@ StaticServlet.prototype.sendDirectory_ = function(req, res, path) {
     var redirectUrl = url.format(url.parse(url.format(req.url)));
     return self.sendRedirect_(req, res, redirectUrl);
   }
-  fs.readdir(path, function(err, files) {
-    if (err)
+  fs.readdir(path, function(error, files) {
+    if (error)
       return self.sendError_(req, res, error);
 
     if (!files.length)
@@ -246,7 +305,7 @@ StaticServlet.prototype.writeDirectoryIndex_ = function(req, res, path, files) {
   res.end();
 };
 
-// Add a sendJson_ function to the StaticServlet prototype
+// Added a sendJson_ function to the StaticServlet.prototype
 StaticServlet.prototype.sendJson_ = function(req, res, path) {
   var self = this,
       reqBody = '';
